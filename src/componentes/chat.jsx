@@ -1,69 +1,86 @@
-import React, { useState, useRef } from 'react';
-import { View, TextInput, TouchableOpacity, Switch, FlatList, StyleSheet, Text, Keyboard } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Pressable, FlatList, StyleSheet } from 'react-native';
 
 // Componente que representa uma mensagem no chat
-const ChatMessage = ({ message, isClient }) => (
-  <View style={[styles.messageContainer, isClient ? styles.clientMessage : styles.attendantMessage]}>
-    <Text style={styles.messageText}>{message}</Text>
+const ChatMessage = ({ message }) => (
+  <View style={[styles.messageContainer, message.isAluno ? styles.alunoMessage : styles.professorMessage]}>
+    <Text style={styles.messageSender}>{message.sender}</Text>
+    <Text style={styles.messageTime}>{message.time}</Text>
+    <Text style={styles.messageContent}>{message.content}</Text>
   </View>
 );
 
 // Componente principal do aplicativo
-function chat() {
-  const [mensagens, setMensagens] = useState([]); // Estado para armazenar as mensagens do chat
+function Chat() {
+  const [messages, setMessages] = useState([
+    { id: '1', sender: 'Professor', time: '10:00', content: 'Olá alunos!', isAluno: false },
+    { id: '2', sender: 'Aluno', time: '10:05', content: 'Olá professor!', isAluno: true },
+  ]); // Estado para armazenar as mensagens do chat
   const [inputText, setInputText] = useState(''); // Estado para armazenar o texto digitado pelo usuário
-  const [isCliente, setIsCliente] = useState(true); // Estado para controlar se o usuário é cliente ou atendente
-  const inputRef = useRef(null); // Referência para o componente TextInput
+  const [filter, setFilter] = useState(null); // Estado para controlar o filtro de mensagens
 
-  // Função para enviar uma mensagem
-  const botaoEnviaMensagem = () => {
-    if (inputText.trim() !== '') { // Verifica se o texto não está vazio
-      setMensagens([...mensagens, { id: mensagens.length.toString(), text: inputText, isClient: isCliente }]); // Adiciona a mensagem ao estado de mensagens
-      setInputText(''); // Limpa o campo de entrada
+  const sendMessage = () => {
+    if (inputText.trim() !== '') {
+      const newMessage = {
+        id: Math.random().toString(),
+        sender: 'Aluno', // Exemplo: sempre que enviar uma mensagem, será considerado como "Aluno"
+        time: new Date().toLocaleTimeString(),
+        content: inputText.trim(),
+        isAluno: true,
+      };
+      setMessages([...messages, newMessage]);
+      setInputText('');
     }
   };
 
-  // Função chamada quando o usuário pressiona uma tecla no teclado
-  const teclaEnviaMensagem = (event) => {
-    if (event.key === 'Enter') { // Verifica se a tecla pressionada é "Enter"
-      botaoEnviaMensagem(); // Chama a função para enviar a mensagem
+  const handleKeyPress = (event) => {
+    if (event.key === 'Enter') {
+      sendMessage();
     }
   };
+
+  const filteredMessages = filter ? messages.filter(message => filter === 'aluno' ? message.isAluno : !message.isAluno) : messages;
 
   return (
     <View style={styles.container}>
-      {/* Componente para alternar entre cliente e atendente */}
-      <View style={styles.switchContainer}>
-        <Text style={styles.switchText}>Professor</Text>
-        <Switch
-          value={isCliente}
-          onValueChange={(value) => setIsCliente(value)}
-          thumbColor="#FFFFFF"
-          trackColor={{ false: '#CCCCCC', true: '#25D366' }}
-        />
-        <Text style={styles.switchText}>Aluno</Text>
+      <View style={styles.filterContainer}>
+        <Pressable
+          style={[styles.filterButton, filter === null && styles.activeFilter]}
+          onPress={() => setFilter(null)}
+        >
+          <Text style={styles.filterText}>Todos</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.filterButton, filter === 'aluno' && styles.activeFilter]}
+          onPress={() => setFilter('aluno')}
+        >
+          <Text style={styles.filterText}>Alunos</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.filterButton, filter === 'professor' && styles.activeFilter]}
+          onPress={() => setFilter('professor')}
+        >
+          <Text style={styles.filterText}>Professores</Text>
+        </Pressable>
       </View>
-      {/* Lista de mensagens */}
       <FlatList
-        data={mensagens}
+        data={filteredMessages}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <ChatMessage message={item.text} isClient={item.isClient} />}
+        renderItem={({ item }) => <ChatMessage message={item} />}
         contentContainerStyle={styles.messagesContainer}
+        inverted
       />
-      {/* Componente de entrada de texto */}
       <View style={styles.inputContainer}>
         <TextInput
-          ref={inputRef}
           style={styles.input}
           placeholder="Digite sua mensagem..."
           value={inputText}
           onChangeText={setInputText}
           multiline
-          onSubmitEditing={botaoEnviaMensagem} // Função chamada quando o usuário pressiona "Enviar" no teclado
-          onKeyPress={teclaEnviaMensagem} // Função chamada quando o usuário pressiona uma tecla no teclado
+          onSubmitEditing={sendMessage}
+          onKeyPress={handleKeyPress}
         />
-        {/* Botão de enviar mensagem */}
-        <TouchableOpacity style={styles.sendButton} onPress={botaoEnviaMensagem}>
+        <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
           <Text style={styles.sendButtonText}>Enviar</Text>
         </TouchableOpacity>
       </View>
@@ -71,23 +88,27 @@ function chat() {
   );
 };
 
-// Estilos do componente
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  switchContainer: {
+  filterContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
+    justifyContent: 'space-around',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderColor: '#CCCCCC',
   },
-  switchText: {
+  filterButton: {
+    paddingVertical: 8,
+  },
+  activeFilter: {
+    borderBottomWidth: 2,
+    borderColor: '#25D366',
+  },
+  filterText: {
     fontSize: 16,
-    marginRight: 8,
-    marginLeft: 8,
   },
   messagesContainer: {
     paddingHorizontal: 16,
@@ -100,15 +121,25 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
   },
-  clientMessage: {
+  alunoMessage: {
     alignSelf: 'flex-end',
     backgroundColor: '#DCF8C6',
   },
-  attendantMessage: {
+  professorMessage: {
     alignSelf: 'flex-start',
     backgroundColor: '#E4E4E4',
   },
-  messageText: {
+  messageSender: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  messageTime: {
+    fontSize: 12,
+    color: '#666666',
+    marginBottom: 4,
+  },
+  messageContent: {
     fontSize: 16,
   },
   inputContainer: {
@@ -142,4 +173,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default chat;
+export default Chat;

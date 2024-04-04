@@ -19,6 +19,12 @@ const RegisterScreen = ({ navigation }) => {
       return;
     }
     
+    // Imprimir os dados de registro no console
+    console.log('Dados de registro:');
+    console.log('Nome:', nome);
+    console.log('Matrícula:', matricula);
+    console.log('Email:', email);
+    console.log('Senha:', password);
 
     // Lógica de registro aqui
     console.log('Sucesso', 'Registrado com sucesso!');
